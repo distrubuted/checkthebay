@@ -38,3 +38,28 @@ If you omit the call, the map falls back to the hardcoded defaults in `main.js`.
 ## Notes for WebViews
 - The layout uses full-viewport sizing (`#map` fills the window) and touch-friendly controls for mobile embeddings.
 - No build step is required; all dependencies load from CDNs.
+
+## Backend snapshot service
+A lightweight Node.js service in `src/` polls NOAA/NWS/GCOOS every ~10 minutes, normalizes data into a snapshot, and serves JSON endpoints for the app and Pro Map.
+
+### Running locally
+1. Ensure Node 18+ is available (uses built-in `fetch`).
+2. Start the API + poller (runs once on boot, then every `POLL_MINUTES`):
+   ```bash
+   npm start
+   ```
+3. Endpoints (served under the base path, default `/api`):
+   - `GET /api/conditions/summary`
+   - `GET /api/conditions/stations`
+   - `GET /api/conditions/field/wind`
+   - `GET /api/conditions/tides?station={id}`
+
+Snapshots are stored in `data/snapshot.json`; adjust station IDs or polling interval via `src/config/stations.js` and the `POLL_MINUTES` env variable.
+
+### Deploying the backend as a web service
+* Bind to your platform's port via `PORT` and adjust the API base path with `BASE_PATH` (defaults to `/api`). Example:
+  ```bash
+  BASE_PATH=/api PORT=8787 POLL_MINUTES=10 node src/server.js
+  ```
+* Expose the service publicly (e.g., via your host's routing or a reverse proxy) and consume endpoints at
+  `https://YOUR_DOMAIN${BASE_PATH}/conditions/summary` and the other paths listed above.

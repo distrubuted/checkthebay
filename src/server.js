@@ -1,70 +1,50 @@
-import http from "http";
-import { handleConditionsSummary } from "./api/conditionsSummary.js";
-import { handleConditionsStations } from "./api/conditionsStations.js";
-import { handleConditionsFieldWind } from "./api/conditionsFieldWind.js";
-import { handleConditionsTides } from "./api/conditionsTides.js";
-import { runPollOnce } from "./pollers/pollConditions.js";
+import express from "express";
+import cors from "cors";
+import { tidesHandler } from "./api/tides.js";
+import { conditionsHandler } from "./api/conditions.js";
+import { stationsHandler } from "./api/stations.js";
+import { inshoreReefsHandler } from "./api/reefs.js";
+import { pollConditions } from "./pollers/pollConditions.js";
 
+const app = express();
+const apiRouter = express.Router();
 const PORT = process.env.PORT || 8787;
-const ENABLE_POLL_ON_BOOT = process.env.POLL_ON_BOOT !== "false";
-const BASE_PATH_RAW = process.env.BASE_PATH || "/api";
-// Normalize the base path to always start with a leading slash and never end with one (except root).
-const BASE_PATH = BASE_PATH_RAW === "/" ? "" : `/${BASE_PATH_RAW.replace(/^\/+/, "").replace(/\/+$/, "")}`;
+const BASE_PATH = "/api";
+const TEN_MINUTES = 10 * 60 * 1000;
 
-function sendNotFound(res) {
-  res.statusCode = 404;
-  res.setHeader("Content-Type", "application/json");
-  res.end(JSON.stringify({ ok: false, error: "not_found" }));
-}
+app.use(cors());
+app.use(express.json());
 
-function withCors(handler) {
-  return async (req, res) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    if (req.method === "OPTIONS") {
-      res.statusCode = 204;
-      res.end();
-      return;
-    }
-    await handler(req, res);
-  };
-}
+apiRouter.get("/tides", tidesHandler);
+apiRouter.get("/conditions/tides", tidesHandler);
+apiRouter.get("/conditions", conditionsHandler);
+apiRouter.get("/stations", stationsHandler);
+apiRouter.get("/reefs/inshore", inshoreReefsHandler);
 
-const routes = {
-  "/conditions/summary": withCors(handleConditionsSummary),
-  "/conditions/stations": withCors(handleConditionsStations),
-  "/conditions/field/wind": withCors(handleConditionsFieldWind),
-  "/conditions/tides": withCors(handleConditionsTides),
-};
+app.use(BASE_PATH, apiRouter);
 
-function matchRoute(pathname) {
-  // Support both the BASE_PATH-prefixed routes and (for backward compatibility) bare routes.
-  const candidates = [pathname];
-  if (BASE_PATH && pathname.startsWith(BASE_PATH)) {
-    const stripped = pathname.slice(BASE_PATH.length) || "/";
-    candidates.push(stripped);
-  }
-  for (const candidate of candidates) {
-    if (routes[candidate]) {
-      return routes[candidate];
-    }
-  }
-  return null;
-}
-
-const server = http.createServer(async (req, res) => {
-  const path = new URL(req.url, `http://${req.headers.host}`).pathname;
-  const handler = matchRoute(path);
-  if (handler) {
-    return handler(req, res);
-  }
-  sendNotFound(res);
+app.get("/", (_req, res) => {
+  res.json({
+    ok: true,
+    message: "CheckTheBay backend",
+    routes: [
+      `${BASE_PATH}/tides`,
+      `${BASE_PATH}/conditions`,
+      `${BASE_PATH}/conditions/tides`,
+      `${BASE_PATH}/stations`,
+      `${BASE_PATH}/reefs/inshore`
+    ]
+  });
 });
 
-server.listen(PORT, () => {
-  console.log(`Check The Bay backend listening on ${PORT} with base path ${BASE_PATH || "/"}`);
-  if (ENABLE_POLL_ON_BOOT) {
-    runPollOnce();
-  }
+function startPolling() {
+  pollConditions().catch((err) => console.error("Initial poll failed", err));
+  setInterval(() => {
+    pollConditions().catch((err) => console.error("Poll failed", err));
+  }, TEN_MINUTES);
+}
+
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}${BASE_PATH}`);
+  startPolling();
 });

@@ -1,4 +1,9 @@
-node_modules/
-data/snapshot.json
+node_modules
 npm-debug.log*
-.DS_Store
+pnpm-lock.yaml
+yarn.lock
+.env
+.data
+coverage
+.data
+/data/snapshot.json

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "reef_01",
+    "name": "Fairhope Artificial Reef",
+    "lat": 30.489,
+    "lon": -87.916,
+    "notes": "Nearshore reef popular for trout and redfish.",
+    "access": "Boat"
+  },
+  {
+    "id": "reef_02",
+    "name": "Point Clear Reef",
+    "lat": 30.472,
+    "lon": -87.908,
+    "notes": "Inshore reef south of Fairhope channel.",
+    "access": "Boat"
+  },
+  {
+    "id": "reef_03",
+    "name": "Dauphin Island Inshore Reef",
+    "lat": 30.256,
+    "lon": -88.123,
+    "notes": "Protected reef on the north side of Dauphin Island.",
+    "access": "Boat"
+  }
+]

@@ -1,11 +1,10 @@
 FROM node:18-alpine
+
 WORKDIR /app
-COPY package.json ./
-RUN npm install --omit=dev
-COPY src ./src
-COPY data ./data
-ENV BASE_PATH=/api
-ENV POLL_MINUTES=10
+COPY package.json package-lock.json* ./
+RUN npm install --production || npm install --production
+COPY . .
+
 ENV PORT=8787
-EXPOSE 8787
+EXPOSE ${PORT}
 CMD ["node", "src/server.js"]

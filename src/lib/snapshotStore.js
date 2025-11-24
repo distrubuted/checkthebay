@@ -1,28 +1,29 @@
-import fs from "fs/promises";
+import fs from "fs";
 import path from "path";
 
 const SNAPSHOT_PATH = path.join(process.cwd(), "data", "snapshot.json");
+let inMemorySnapshot = null;
 
-export async function saveSnapshot(snapshot) {
+export async function loadSnapshot() {
+  if (inMemorySnapshot) return inMemorySnapshot;
   try {
-    await fs.mkdir(path.dirname(SNAPSHOT_PATH), { recursive: true });
-    await fs.writeFile(SNAPSHOT_PATH, JSON.stringify(snapshot, null, 2), "utf-8");
-    return true;
+    const raw = await fs.promises.readFile(SNAPSHOT_PATH, "utf8");
+    inMemorySnapshot = JSON.parse(raw);
+    return inMemorySnapshot;
   } catch (err) {
-    console.error("Failed to save snapshot", err);
-    return false;
+    return null;
   }
 }
 
-export async function loadSnapshot() {
+export async function saveSnapshot(snapshot) {
+  inMemorySnapshot = snapshot;
   try {
-    const content = await fs.readFile(SNAPSHOT_PATH, "utf-8");
-    return JSON.parse(content);
+    await fs.promises.writeFile(SNAPSHOT_PATH, JSON.stringify(snapshot, null, 2), "utf8");
   } catch (err) {
-    if (err.code === "ENOENT") {
-      return null;
-    }
-    console.error("Failed to load snapshot", err);
-    return null;
+    console.error("Failed to persist snapshot", err.message);
   }
+}
+
+export function getSnapshotPath() {
+  return SNAPSHOT_PATH;
 }

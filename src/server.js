@@ -7,6 +7,9 @@ import { runPollOnce } from "./pollers/pollConditions.js";
 
 const PORT = process.env.PORT || 8787;
 const ENABLE_POLL_ON_BOOT = process.env.POLL_ON_BOOT !== "false";
+const BASE_PATH_RAW = process.env.BASE_PATH || "/api";
+// Normalize the base path to always start with a leading slash and never end with one (except root).
+const BASE_PATH = BASE_PATH_RAW === "/" ? "" : `/${BASE_PATH_RAW.replace(/^\/+/, "").replace(/\/+$/, "")}`;
 
 function sendNotFound(res) {
   res.statusCode = 404;
@@ -35,9 +38,24 @@ const routes = {
   "/conditions/tides": withCors(handleConditionsTides),
 };
 
+function matchRoute(pathname) {
+  // Support both the BASE_PATH-prefixed routes and (for backward compatibility) bare routes.
+  const candidates = [pathname];
+  if (BASE_PATH && pathname.startsWith(BASE_PATH)) {
+    const stripped = pathname.slice(BASE_PATH.length) || "/";
+    candidates.push(stripped);
+  }
+  for (const candidate of candidates) {
+    if (routes[candidate]) {
+      return routes[candidate];
+    }
+  }
+  return null;
+}
+
 const server = http.createServer(async (req, res) => {
   const path = new URL(req.url, `http://${req.headers.host}`).pathname;
-  const handler = routes[path];
+  const handler = matchRoute(path);
   if (handler) {
     return handler(req, res);
   }
@@ -45,7 +63,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Check The Bay backend listening on ${PORT}`);
+  console.log(`Check The Bay backend listening on ${PORT} with base path ${BASE_PATH || "/"}`);
   if (ENABLE_POLL_ON_BOOT) {
     runPollOnce();
   }

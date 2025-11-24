@@ -1,40 +1,48 @@
-# Check The Bay · Pro Map demo
+# CheckTheBay Backend (Clean Rebuild)
 
-A self-contained Leaflet-based map for Mobile Bay and the wider Gulf of Mexico. Designed to be embedded inside a mobile WebView (e.g., Base44) or served as a static page.
+A lightweight Express backend for CheckTheBay providing tides, conditions, stations, and inshore reef data with a WorldTides-powered polling loop.
 
-## Quick start
-1. Serve the static files in this folder (e.g., with any static file host). The entry point is `index.html`.
-2. Open the page in your browser or WebView. The map will initialize automatically with the default data endpoints and fit the
-   wider Gulf of Mexico view. A bottom-left control offers quick jumps to Mobile Bay or the Gulf overview.
+## Endpoints (base path `/api`)
+- `GET /api/tides` — Tide extremes and hourly heights (query `lat`, `lon` optional; defaults to Point Clear, AL).
+- `GET /api/conditions` — Current bay conditions (NWS hourly forecast + cached water temp stub).
+- `GET /api/conditions/tides` — Same as `/api/tides` for legacy callers.
+- `GET /api/stations` — Station list from `data/stations.json`.
+- `GET /api/reefs/inshore` — Inshore reef list from `data/reefs-inshore.json`.
 
-## Embedding with custom endpoints
-If you need to provide your own backend URLs at runtime, call the global initializer after the page loads:
+## WorldTides Integration
+- Uses `WORLD_TIDES_API_KEY` environment variable.
+- Caches responses for 6 minutes; falls back to cached or bundled sample data when unavailable.
+- Normalizes to `{ updatedAt, currentHeight, nextHigh, nextLow, extremes[], hourly[] }`.
 
-```html
-<link rel="stylesheet" href="styles.css" />
-<div id="map"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="main.js"></script>
-<script>
-  window.initProMap({
-    reefsUrl: 'https://YOUR_BACKEND/reefs/inshore',
-    stationsUrl: 'https://YOUR_BACKEND/stations',
-  });
-</script>
+## Polling
+- Background poller runs every 10 minutes to refresh tides and conditions snapshots.
+- `/api/conditions` also fetches on-demand with a 5-minute cache; upstream errors fall back to cached data when possible.
+
+## Running locally
+```bash
+npm install
+npm start
+# Server listens on PORT (default 8787) and mounts routes at /api
 ```
 
-If you omit the call, the map falls back to the hardcoded defaults in `main.js`.
+## Render Deployment
+1. Create a new Web Service on Render, pointing to this repo.
+2. Set **Build Command** to `npm install`.
+3. Set **Start Command** to `node src/server.js`.
+4. Add environment variables:
+   - `PORT` (Render auto-assigns; leave default or set to 10000+ as needed)
+   - `WORLD_TIDES_API_KEY` (your WorldTides key)
+5. Deploy — Render will expose the public HTTPS URL. Example: `https://<app>.onrender.com/api/tides`.
 
-## Data sources
-- **Reefs**: Fetched from the configured `reefsUrl` and rendered as blue circle markers.
-- **Stations**: Loaded from `stationsUrl` GeoJSON; active stations appear green and inactive ones red.
-- **Wind/Current field**: Uses `data/sampleWindField.json` as a demo; swap this file for a live feed without changing the front-end logic.
+## Files
+- `src/server.js` — Express app, base router, and polling scheduler.
+- `src/api/` — Route handlers for tides, conditions, stations, reefs.
+- `src/lib/worldTides.js` — WorldTides client with caching and sample fallback.
+- `src/lib/normalize.js` — Tide normalization helpers.
+- `src/lib/snapshotStore.js` — In-memory + JSON file snapshot store.
+- `src/pollers/` — Polling orchestration for tides and conditions.
+- `data/` — Stations, reefs, and sample tide data.
 
-## Layer toggles and controls
-- The top-right layers menu controls Wind/Currents, Stations, and Reefs visibility (satellite imagery always on).
-- The bottom-left pills let you jump to Mobile Bay or the wider Gulf overview.
-- The legend in the bottom-right shows symbol meanings and live counts of stations/reefs in the current view.
-
-## Notes for WebViews
-- The layout uses full-viewport sizing (`#map` fills the window) and touch-friendly controls for mobile embeddings.
-- No build step is required; all dependencies load from CDNs.
+## Environment variables
+- `PORT` — Server port (defaults to 8787).
+- `WORLD_TIDES_API_KEY` — Required for live tide data; if unset, sample data is served.

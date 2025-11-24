@@ -1,8 +1,12 @@
 import { STATIONS, PRIMARY_STATION_ID } from "../config/stations.js";
-import { getStationWaterLevel } from "../lib/noaaTides.js";
+import { getStationWaterLevel, getTidePredictions } from "../lib/noaaTides.js";
 import { getHourlyForecast } from "../lib/noaaWeather.js";
 import { getWindField } from "../lib/gcoosField.js";
-import { buildStationConditions, buildSummary } from "../lib/normalize.js";
+import {
+  buildStationConditions,
+  buildSummary,
+  computeTidePhaseFromSeries,
+} from "../lib/normalize.js";
 import { saveSnapshot } from "../lib/snapshotStore.js";
 import { publishConditionsUpdate } from "../lib/pubsub.js";
 
@@ -10,21 +14,22 @@ const POLL_INTERVAL_MINUTES = Number(process.env.POLL_MINUTES || 10);
 
 async function pollStation(stationConfig) {
   try {
-    const [water, forecast] = await Promise.all([
+    const [water, forecast, tidePredictions] = await Promise.all([
       getStationWaterLevel(stationConfig.noaaStationId),
       getHourlyForecast(stationConfig.lat, stationConfig.lon),
+      getTidePredictions(stationConfig.noaaStationId, { rangeHours: 6 }),
     ]);
-    const tidePhase = null;
+    const tidePhase = computeTidePhaseFromSeries(tidePredictions);
     const stationConditions = buildStationConditions(
       stationConfig,
       water,
       forecast,
       tidePhase
     );
-    return { stationConditions };
+    return { stationConditions, tidePredictions };
   } catch (err) {
     console.error(`Failed to poll station ${stationConfig.id}`, err);
-    return { stationConditions: buildStationConditions(stationConfig) };
+    return { stationConditions: buildStationConditions(stationConfig), tidePredictions: [] };
   }
 }
 
@@ -33,6 +38,10 @@ export async function runPollOnce() {
   const results = await Promise.all(stationEntries.map((station) => pollStation(station)));
 
   const stations = results.map((r) => r.stationConditions);
+  const predictionsByStation = stationEntries.reduce((acc, station, idx) => {
+    acc[station.id] = results[idx].tidePredictions;
+    return acc;
+  }, {});
 
   const primary = stations.find((s) => s.stationId === PRIMARY_STATION_ID) || stations[0];
   const summary = primary ? buildSummary(primary) : null;
@@ -48,6 +57,7 @@ export async function runPollOnce() {
     updatedAt: new Date().toISOString(),
     summary,
     stations,
+    predictionsByStation,
     field: {
       wind: fieldWind,
     },
@@ -66,13 +76,8 @@ export async function runPollOnce() {
 function schedule() {
   const intervalMs = POLL_INTERVAL_MINUTES * 60 * 1000;
   runPollOnce();
-  const timer = setInterval(runPollOnce, intervalMs);
+  setInterval(runPollOnce, intervalMs);
   console.log(`Polling scheduled every ${POLL_INTERVAL_MINUTES} minutes`);
-  return timer;
-}
-
-export function startPolling() {
-  return schedule();
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

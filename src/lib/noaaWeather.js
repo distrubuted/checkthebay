@@ -1,25 +1,24 @@
-import { fetchWithTimeout } from "./httpClient.js";
-
 const BASE_URL = "https://api.weather.gov";
 const USER_AGENT = "CheckTheBay (developer@example.com)";
 const DEFAULT_TIMEOUT_MS = 12_000;
 
 async function fetchJson(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
   try {
-    const res = await fetchWithTimeout(url, {
-      timeoutMs: DEFAULT_TIMEOUT_MS,
+    const res = await fetch(url, {
       headers: {
         "User-Agent": USER_AGENT,
         Accept: "application/geo+json, application/json",
       },
+      signal: controller.signal,
     });
     if (!res.ok) {
       throw new Error(`NWS request failed: ${res.status}`);
     }
     return await res.json();
-  } catch (err) {
-    console.warn("noaaWeather: upstream fetch failed", err?.message || err);
-    return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

@@ -3,14 +3,11 @@ import { handleConditionsSummary } from "./api/conditionsSummary.js";
 import { handleConditionsStations } from "./api/conditionsStations.js";
 import { handleConditionsFieldWind } from "./api/conditionsFieldWind.js";
 import { handleConditionsTides } from "./api/conditionsTides.js";
-import { runPollOnce, startPolling } from "./pollers/pollConditions.js";
-import { loadSnapshot } from "./lib/snapshotStore.js";
+import { runPollOnce } from "./pollers/pollConditions.js";
 
 const PORT = process.env.PORT || 8787;
 const ENABLE_POLL_ON_BOOT = process.env.POLL_ON_BOOT !== "false";
 const BASE_PATH_RAW = process.env.BASE_PATH || "/api";
-const RUN_ONCE = process.argv.includes("--once");
-const ENABLE_SCHEDULE = process.env.POLL_SCHEDULE !== "false" && !RUN_ONCE;
 // Normalize the base path to always start with a leading slash and never end with one (except root).
 const BASE_PATH = BASE_PATH_RAW === "/" ? "" : `/${BASE_PATH_RAW.replace(/^\/+/, "").replace(/\/+$/, "")}`;
 
@@ -34,33 +31,10 @@ function withCors(handler) {
   };
 }
 
-const ROUTE_PATHS = [
-  "/conditions/summary",
-  "/conditions/stations",
-  "/conditions/field/wind",
-  "/tides",
-  "/conditions/tides",
-];
-
 const routes = {
-  "/": withCors(async (_req, res) => {
-    const snapshot = await loadSnapshot();
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "application/json");
-    res.end(
-      JSON.stringify({
-        ok: true,
-        message: "Check The Bay backend is running",
-        basePath: BASE_PATH || "/",
-        updatedAt: snapshot?.updatedAt || null,
-        endpoints: ROUTE_PATHS.map((r) => `${BASE_PATH || ""}${r}`),
-      })
-    );
-  }),
   "/conditions/summary": withCors(handleConditionsSummary),
   "/conditions/stations": withCors(handleConditionsStations),
   "/conditions/field/wind": withCors(handleConditionsFieldWind),
-  "/tides": withCors(handleConditionsTides),
   "/conditions/tides": withCors(handleConditionsTides),
 };
 
@@ -90,15 +64,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Check The Bay backend listening on ${PORT} with base path ${BASE_PATH || "/"}`);
-  if (RUN_ONCE) {
-    runPollOnce();
-    return;
-  }
   if (ENABLE_POLL_ON_BOOT) {
-    if (ENABLE_SCHEDULE) {
-      startPolling();
-    } else {
-      runPollOnce();
-    }
+    runPollOnce();
   }
 });

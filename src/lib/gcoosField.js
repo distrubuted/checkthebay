@@ -4,8 +4,6 @@
 //   Endpoint: https://erddap.gcoos.org/erddap/griddap/gfs_pgrb2_global_0p25deg.csv
 // Bounding box chosen to cover Mobile Bay and nearby Gulf waters.
 
-import { fetchWithTimeout } from "./httpClient.js";
-
 const ERDDAP_BASE = "https://erddap.gcoos.org/erddap/griddap/gfs_pgrb2_global_0p25deg.csv";
 const DEFAULT_BOUNDS = {
   minLat: 28.0,
@@ -16,15 +14,16 @@ const DEFAULT_BOUNDS = {
 const DEFAULT_TIMEOUT_MS = 15_000;
 
 async function fetchCsv(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
   try {
-    const res = await fetchWithTimeout(url, { timeoutMs: DEFAULT_TIMEOUT_MS });
+    const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) {
       throw new Error(`GCOOS request failed: ${res.status}`);
     }
     return await res.text();
-  } catch (err) {
-    console.warn("gcoosField: upstream fetch failed", err?.message || err);
-    return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -47,17 +46,23 @@ function parseCsv(text) {
 export async function getWindField(bounds = DEFAULT_BOUNDS) {
   // Query the most recent timestep (last()) for u and v components.
   const query = `${ERDDAP_BASE}?time,latitude,longitude,u-component_of_wind_height_above_ground,v-component_of_wind_height_above_ground&time=(last())&latitude=(${bounds.maxLat}):(${bounds.minLat}):0.25&longitude=(${bounds.minLon}):(${bounds.maxLon}):0.25`;
-  const csv = await fetchCsv(query);
-  if (!csv) {
-    return null;
+  try {
+    const csv = await fetchCsv(query);
+    const vectors = parseCsv(csv);
+    return {
+      meta: {
+        latStep: 0.25,
+        lonStep: 0.25,
+        description: "GFS surface wind field via GCOOS ERDDAP",
+      },
+      vectors,
+    };
+  } catch (err) {
+    console.error("Failed to fetch GCOOS wind field", err);
+    return {
+      meta: null,
+      vectors: [],
+      error: err.message,
+    };
   }
-  const vectors = parseCsv(csv);
-  return {
-    meta: {
-      latStep: 0.25,
-      lonStep: 0.25,
-      description: "GFS surface wind field via GCOOS ERDDAP",
-    },
-    vectors,
-  };
 }

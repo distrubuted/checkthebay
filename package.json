@@ -8,8 +8,5 @@
     "start": "node src/server.js",
     "poll": "node src/pollers/pollConditions.js"
   },
-  "dependencies": {},
-  "engines": {
-    "node": ">=18"
-  }
+  "dependencies": {}
 }

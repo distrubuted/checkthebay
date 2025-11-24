@@ -1,0 +1,15 @@
+{
+  "name": "checkthebay-backend",
+  "version": "1.0.0",
+  "description": "Polling and snapshot backend for Check The Bay.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "poll": "node src/pollers/pollConditions.js"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -43,23 +43,33 @@ If you omit the call, the map falls back to the hardcoded defaults in `main.js`.
 A lightweight Node.js service in `src/` polls NOAA/NWS/GCOOS every ~10 minutes, normalizes data into a snapshot, and serves JSON endpoints for the app and Pro Map.
 
 ### Running locally
-1. Ensure Node 18+ is available (uses built-in `fetch`).
-2. Start the API + poller (runs once on boot, then every `POLL_MINUTES`):
+1. Ensure Node 18+ is available (uses the built-in `fetch`; older Node versions will throw on startup).
+2. Install dependencies (none beyond Node itself today, but keeps npm scripts happy):
+   ```bash
+   npm install
+   ```
+3. Start the API + poller. By default the poller runs immediately on boot and then every `POLL_MINUTES` (default 10):
    ```bash
    npm start
    ```
-3. Endpoints (served under the base path, default `/api`):
+   * Add `--once` to run the poller a single time on startup without scheduling repeats: `npm start -- --once`.
+   * Set `POLL_SCHEDULE=false` to disable recurring polls while still serving the API.
+4. Endpoints (served under the base path, default `/api`):
    - `GET /api/conditions/summary`
    - `GET /api/conditions/stations`
    - `GET /api/conditions/field/wind`
-   - `GET /api/conditions/tides?station={id}`
+   - `GET /api/tides?lat=30.49&lon=-87.93` (defaults to Point Clear, AL when lat/lon omitted)
 
-Snapshots are stored in `data/snapshot.json`; adjust station IDs or polling interval via `src/config/stations.js` and the `POLL_MINUTES` env variable.
+Snapshots are stored in `data/snapshot.json`; adjust station IDs or polling interval via `src/config/stations.js` and the `POLL_MINUTES` env variable. Tide data comes from the WorldTides API using the `WORLD_TIDES_API_KEY` env variable (falls back to local sample data when unset).
 
 ### Deploying the backend as a web service
-* Bind to your platform's port via `PORT` and adjust the API base path with `BASE_PATH` (defaults to `/api`). Example:
+* **Container build:** Use the provided `Dockerfile` to package the poller + API together. Example:
   ```bash
-  BASE_PATH=/api PORT=8787 POLL_MINUTES=10 node src/server.js
+  docker build -t checkthebay-backend .
+  docker run -p 8787:8787 -e BASE_PATH=/api -e POLL_MINUTES=10 checkthebay-backend
   ```
-* Expose the service publicly (e.g., via your host's routing or a reverse proxy) and consume endpoints at
-  `https://YOUR_DOMAIN${BASE_PATH}/conditions/summary` and the other paths listed above.
+  The server listens on `0.0.0.0:${PORT}` (defaults to 8787).
+* **Platform guidance:** Point your platform's router or load balancer at the container and publish the port publicly. Your
+  live endpoints will be reachable at `https://YOUR_DOMAIN${BASE_PATH}/conditions/summary` and the other paths listed above.
+* **Note on this environment:** This sandbox cannot expose a public HTTPS endpoint, so you will need to deploy the container
+  to your preferred host (e.g., Fly.io, Render, Cloud Run, ECS) to obtain a public base URL.

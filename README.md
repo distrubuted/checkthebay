@@ -38,3 +38,21 @@ If you omit the call, the map falls back to the hardcoded defaults in `main.js`.
 ## Notes for WebViews
 - The layout uses full-viewport sizing (`#map` fills the window) and touch-friendly controls for mobile embeddings.
 - No build step is required; all dependencies load from CDNs.
+
+## Backend snapshot service
+A lightweight Node.js service in `src/` polls NOAA/NWS/GCOOS every ~10 minutes, normalizes data into a snapshot, and serves JSON endpoints for the app and Pro Map.
+
+### Running locally
+1. Ensure Node 18+ is available (uses built-in `fetch`).
+2. Poll once and start the server:
+   ```bash
+   node src/pollers/pollConditions.js &
+   node src/server.js
+   ```
+3. Endpoints:
+   - `GET /conditions/summary`
+   - `GET /conditions/stations`
+   - `GET /conditions/field/wind`
+   - `GET /conditions/tides?station={id}`
+
+Snapshots are stored in `data/snapshot.json`; adjust station IDs or polling interval via `src/config/stations.js` and the `POLL_MINUTES` env variable.

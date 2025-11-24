@@ -44,10 +44,9 @@ A lightweight Node.js service in `src/` polls NOAA/NWS/GCOOS every ~10 minutes, 
 
 ### Running locally
 1. Ensure Node 18+ is available (uses built-in `fetch`).
-2. Poll once and start the server:
+2. Start the API + poller (runs once on boot, then every `POLL_MINUTES`):
    ```bash
-   node src/pollers/pollConditions.js &
-   node src/server.js
+   npm start
    ```
 3. Endpoints (served under the base path, default `/api`):
    - `GET /api/conditions/summary`

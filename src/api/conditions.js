@@ -1,9 +1,13 @@
-import { loadSnapshot } from "../lib/snapshotStore.js";
+import { getCurrentConditions } from "../lib/conditions.js";
 
 export async function conditionsHandler(_req, res) {
-  const snapshot = await loadSnapshot();
-  if (!snapshot) {
-    return res.status(503).json({ ok: false, error: "snapshot_unavailable" });
+  try {
+    const conditions = await getCurrentConditions();
+    res.json(conditions);
+  } catch (err) {
+    console.error(`Conditions handler error: ${err.message}`);
+    res
+      .status(500)
+      .json({ ok: false, error: "conditions_fetch_failed", detail: err.message });
   }
-  res.json(snapshot);
 }

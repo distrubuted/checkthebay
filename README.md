@@ -4,7 +4,7 @@ A lightweight Express backend for CheckTheBay providing tides, conditions, stati
 
 ## Endpoints (base path `/api`)
 - `GET /api/tides` — Tide extremes and hourly heights (query `lat`, `lon` optional; defaults to Point Clear, AL).
-- `GET /api/conditions` — Current snapshot saved by the poller.
+- `GET /api/conditions` — Current bay conditions (NWS hourly forecast + cached water temp stub).
 - `GET /api/conditions/tides` — Same as `/api/tides` for legacy callers.
 - `GET /api/stations` — Station list from `data/stations.json`.
 - `GET /api/reefs/inshore` — Inshore reef list from `data/reefs-inshore.json`.
@@ -15,8 +15,8 @@ A lightweight Express backend for CheckTheBay providing tides, conditions, stati
 - Normalizes to `{ updatedAt, currentHeight, nextHigh, nextLow, extremes[], hourly[] }`.
 
 ## Polling
-- Background poller runs every 10 minutes to refresh tides and snapshot data.
-- Weather polling is intentionally disabled until a stable upstream API is approved.
+- Background poller runs every 10 minutes to refresh tides and conditions snapshots.
+- `/api/conditions` also fetches on-demand with a 5-minute cache; upstream errors fall back to cached data when possible.
 
 ## Running locally
 ```bash

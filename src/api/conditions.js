@@ -1,9 +1,9 @@
-import { getCurrentConditions } from "../lib/conditions.js";
+import { getAggregatedConditions } from "../services/conditionsAggregator.js";
 
 export async function conditionsHandler(_req, res) {
   try {
-    const conditions = await getCurrentConditions();
-    res.json(conditions);
+    const payload = await getAggregatedConditions();
+    res.json(payload);
   } catch (err) {
     console.error(`Conditions handler error: ${err.message}`);
     res

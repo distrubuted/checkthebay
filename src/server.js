@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { tidesHandler } from "./api/tides.js";
-import { conditionsHandler } from "./api/conditions.js";
+import { conditionsHandler } from "./routes/conditions.js";
 import { stationsHandler } from "./api/stations.js";
 import { inshoreReefsHandler } from "./api/reefs.js";
 import { pollConditions } from "./pollers/pollConditions.js";

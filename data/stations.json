@@ -1,0 +1,30 @@
+[
+  {
+    "id": "central_bay",
+    "name": "Mobile Bay Mid-Bay",
+    "lat": 30.3,
+    "lon": -88.0,
+    "description": "Reference point near the center of Mobile Bay for general conditions."
+  },
+  {
+    "id": "upper_bay",
+    "name": "Upper Mobile Bay",
+    "lat": 30.7,
+    "lon": -88.0,
+    "description": "North end of Mobile Bay near the Mobile River delta."
+  },
+  {
+    "id": "lower_bay",
+    "name": "Lower Mobile Bay",
+    "lat": 30.15,
+    "lon": -88.03,
+    "description": "South end of Mobile Bay near Dauphin Island."
+  },
+  {
+    "id": "point_clear",
+    "name": "Point Clear, AL",
+    "lat": 30.49,
+    "lon": -87.93,
+    "description": "Default tide reference near Fairhope/Point Clear."
+  }
+]

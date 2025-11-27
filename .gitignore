@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log*
+pnpm-lock.yaml
+yarn.lock
+.env
+.data
+coverage
+.data
+/data/snapshot.json

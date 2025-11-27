@@ -15,8 +15,6 @@ const TEN_MINUTES = 10 * 60 * 1000;
 app.use(cors());
 app.use(express.json());
 
-app.get("/api/conditions", conditionsHandler);
-
 apiRouter.get("/tides", tidesHandler);
 apiRouter.get("/conditions/tides", tidesHandler);
 apiRouter.get("/conditions", conditionsHandler);

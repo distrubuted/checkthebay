@@ -1,5 +1,3 @@
-import { ensureFetch } from "../lib/fetch.js";
-
 const DEFAULT_COORDS = { lat: 30.3, lon: -88.0 };
 const USER_AGENT = "CheckTheBay/1.0 (backend@checkthebay.example)";
 
@@ -16,7 +14,6 @@ function cacheFresh(cache) {
 }
 
 async function fetchJson(url) {
-  const fetch = await ensureFetch();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
   try {

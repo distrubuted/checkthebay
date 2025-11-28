@@ -1,5 +1,3 @@
-import { ensureFetch } from "./fetch.js";
-
 const BAY_LAT = 30.3;
 const BAY_LON = -88.0;
 const CACHE_MS = 5 * 60 * 1000; // 5 minutes
@@ -73,7 +71,6 @@ function computeRating({ windSpeedKts, visibilityMi, airTempF, waterTempF }) {
 }
 
 async function fetchJson(url) {
-  const fetch = await ensureFetch();
   const response = await fetch(url, {
     headers: {
       "User-Agent": USER_AGENT,

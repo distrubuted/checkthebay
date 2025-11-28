@@ -1,5 +1,4 @@
 import fs from "fs";
-import { ensureFetch } from "./fetch.js";
 
 const API_BASE = "https://www.worldtides.info/api/v3";
 const CACHE_WINDOW_MS = 6 * 60 * 1000; // 6 minutes
@@ -86,7 +85,6 @@ export async function fetchExtremesAndHeights(lat, lon) {
   const url = `${API_BASE}?${params.toString()}`;
 
   try {
-    const fetch = await ensureFetch();
     const response = await fetch(url, {
       headers: {
         "User-Agent": "CheckTheBay backend"

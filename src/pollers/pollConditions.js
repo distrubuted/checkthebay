@@ -11,7 +11,8 @@ export async function pollConditions() {
     tides,
     conditions
   };
-  const existing = await loadSnapshot();
+  const existing = (await loadSnapshot()) || {};
+  // Default existing to an empty object so first-run (no snapshot file) merges safely
   await saveSnapshot({ ...existing, ...snapshot });
   return snapshot;
 }

@@ -1,7 +1,8 @@
 {
-  "name": "checkthebay-backend",
+  "name": "didyoucheckthebay-backend",
   "version": "1.0.0",
-  "description": "Backend service for CheckTheBay with tides, conditions, stations, and reefs endpoints.",
+  "description": "Scraper-first backend for Did You Check The Bay with cached bay conditions.",
+  "type": "module",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -12,7 +13,8 @@
     "node": ">=18"
   },
   "dependencies": {
+    "cheerio": "file:vendor/cheerio",
     "cors": "^2.8.5",
-    "express": "^4.19.2"
+    "express": "^4.22.1"
   }
 }

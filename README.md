@@ -1,48 +1,47 @@
-# CheckTheBay Backend (Clean Rebuild)
+# Did You Check The Bay — Scraper Backend
 
-A lightweight Express backend for CheckTheBay providing tides, conditions, stations, and inshore reef data with a WorldTides-powered polling loop.
+A scraper-focused Node.js backend that polls public sources for Point Clear / Mobile Bay, AL and serves a consolidated JSON payload for Base44.
 
 ## Endpoints (base path `/api`)
-- `GET /api/tides` — Tide extremes and hourly heights (query `lat`, `lon` optional; defaults to Point Clear, AL).
-- `GET /api/conditions` — Current bay conditions (NWS hourly forecast + cached water temp stub).
-- `GET /api/conditions/tides` — Same as `/api/tides` for legacy callers.
-- `GET /api/stations` — Station list from `data/stations.json`.
-- `GET /api/reefs/inshore` — Inshore reef list from `data/reefs-inshore.json`.
+- `GET /api/health` → `{ ok: true }`
+- `GET /api/conditions` → Latest cached bay conditions payload.
 
-## WorldTides Integration
-- Uses `WORLD_TIDES_API_KEY` environment variable.
-- Caches responses for 6 minutes; falls back to cached or bundled sample data when unavailable.
-- Normalizes to `{ updatedAt, currentHeight, nextHigh, nextLow, extremes[], hourly[] }`.
-
-## Polling
-- Background poller runs every 10 minutes to refresh tides and conditions snapshots.
-- `/api/conditions` also fetches on-demand with a 5-minute cache; upstream errors fall back to cached data when possible.
+## Data shape
+`/api/conditions` returns:
+```
+{
+  updatedAt: ISO_STRING,
+  tide: { currentFt, nextHigh, nextLow, trend },
+  weather: { tempF, feelsLikeF, humidityPct, visibilityMi, summary },
+  wind: { speedMph, gustMph, directionDeg, directionCardinal },
+  marine: { waveHeightFt, summary },
+  moon: { phase, illuminationPct, moonrise, moonset },
+  radar: { imageUrl, updatedAt },
+  stale: boolean,
+  errors: string[]
+}
+```
+Missing values are `null` but keys remain.
 
 ## Running locally
 ```bash
 npm install
 npm start
-# Server listens on PORT (default 8787) and mounts routes at /api
+# Server listens on PORT (default 8787)
 ```
 
-## Render Deployment
-1. Create a new Web Service on Render, pointing to this repo.
-2. Set **Build Command** to `npm install`.
-3. Set **Start Command** to `node src/server.js`.
-4. Add environment variables:
-   - `PORT` (Render auto-assigns; leave default or set to 10000+ as needed)
-   - `WORLD_TIDES_API_KEY` (your WorldTides key)
-5. Deploy — Render will expose the public HTTPS URL. Example: `https://<app>.onrender.com/api/tides`.
+## Polling and cache
+- Polls every 10 minutes for fresh conditions.
+- Keeps last good payload in memory **and** `data/conditions-cache.json` for cold starts.
+- Logs polling success/failure to stdout for Render visibility.
 
-## Files
-- `src/server.js` — Express app, base router, and polling scheduler.
-- `src/api/` — Route handlers for tides, conditions, stations, reefs.
-- `src/lib/worldTides.js` — WorldTides client with caching and sample fallback.
-- `src/lib/normalize.js` — Tide normalization helpers.
-- `src/lib/snapshotStore.js` — In-memory + JSON file snapshot store.
-- `src/pollers/` — Polling orchestration for tides and conditions.
-- `data/` — Stations, reefs, and sample tide data.
-
-## Environment variables
-- `PORT` — Server port (defaults to 8787).
-- `WORLD_TIDES_API_KEY` — Required for live tide data; if unset, sample data is served.
+## Docker
+Render-friendly image example:
+```
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY . .
+CMD ["node", "src/server.js"]
+```

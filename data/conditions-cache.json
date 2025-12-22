@@ -1,0 +1,38 @@
+{
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "tide": {
+    "currentFt": null,
+    "nextHigh": null,
+    "nextLow": null,
+    "trend": null
+  },
+  "weather": {
+    "tempF": null,
+    "feelsLikeF": null,
+    "humidityPct": null,
+    "visibilityMi": null,
+    "summary": null
+  },
+  "wind": {
+    "speedMph": null,
+    "gustMph": null,
+    "directionDeg": null,
+    "directionCardinal": null
+  },
+  "marine": {
+    "waveHeightFt": null,
+    "summary": null
+  },
+  "moon": {
+    "phase": null,
+    "illuminationPct": null,
+    "moonrise": null,
+    "moonset": null
+  },
+  "radar": {
+    "imageUrl": null,
+    "updatedAt": null
+  },
+  "stale": true,
+  "errors": []
+}
